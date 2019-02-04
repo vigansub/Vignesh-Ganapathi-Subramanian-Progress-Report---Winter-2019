@@ -1,0 +1,35 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+
+\title{Learning kernels to denoise maps}
+\author{Vignesh Ganapathi-Subramanian, Or Litany, \\ Prof. Leonidas J. Guibas}
+\date{February 1, 2019}
+
+\begin{document}
+
+\maketitle
+
+Functional techniques to match shapes typically use descriptor matching as the central idea. While descriptors, in the form of per-point valued features, are used very commonly in a number of functional map based works~\cite{ovsjanikov2012functional}, the work by Vestner et al.~\cite{vestner2017efficient} proposes using symmetric kernels as shape descriptors to perform matching. 
+
+An example of a kernel is the heat kernel, which measures how heat diffuses across a manifold. This is measured by means of Laplace's heat equation, as follows: 
+
+\begin{equation}
+    \nabla_\mathcal{X} h(x,t) = -\frac{\partial h(x,t)}{\partial t}
+    \label{eq:heat}
+\end{equation}
+
+In the above equation, $\nabla_\mathcal{X}$ refers to the symmetric manifold Laplacian on the manifold $\mathcal{X}$. A discrete solution to this equation is provided as $h(X,t) = K(t)h(x,0)$, where $h(x,t)$ is the per-point heat description over the shape at time $t$ dependent on the initial conditions of heat distribution at time $t=0$, given by $h(x,0)$. $K(t)$ here is the heat kernel, which is a time dependent matrix, provided by $\phi_\mathcal{X}e^{-\Lambda_\mathcal{X} t}\phi_\mathcal{X}^T$, where $\phi_\mathcal{X}$ and $\Lambda_\mathcal{X}$ refer to the eigenvector and diagonal eigenvalue matrices of the manifold Laplacian in discrete form. This can be obtained by the fact that $\nabla_\mathcal{X} = \phi_\mathcal{X}\Lambda_\mathcal{X}\phi_\mathcal{X}^T$, and the solution to Equation~\ref{eq:heat} is given by $h(x,t) = e^{-\nabla_\mathcal{X} t}h(x,0)$. 
+
+The idea of performing descriptor matching in the form of kernel matching as proposed in \cite{vestner2017efficient}, uses the key idea from alternating diffusion as proposed in \cite{lederman2014common}. An extension of the same idea to matches between a pair of shapes, is to minimize the loss produced by diffusion across a kernel on a shape, followed by transporting it to another shape, and by transporting to a second shape and then performing diffusion. If the matching between two shapes is obtained by a permutation $\Pi$, then this amounts to minimizing the quantity $|\Pi K_\mathcal{X} - K_\mathcal{Y} \Pi|$. Minimizing the Frobenius norm of this difference matrix is shown to be equivalent to maximizing $\langle \Pi, K_\mathcal{X}\Pi K_\mathcal{Y}\rangle$. In this optimization problem, every subsequent iteration attempts to maximize $\langle \Pi, K_\mathcal{X}\Pi^i K_\mathcal{Y}\rangle$, where $\Pi^i$ is the solution corresponding to the $i^{\text{th}}$ iteration.
+
+On evidence of the fact that subsequent iterations of the kernel matching algorithm "fix" wrong permutations, we use this idea as the core of this work, where we attempt to use kernel matching to fix noise in maps. Here, we consider a setup where we start, assuming an incorrect matching of points on two different shapes, and attempt to use kernel matching to fix this incorrect matching.
+
+Ideally, since the kernels contain more spatial information, one could trust them to be more reliable in fixing wrong matches. Since the kernels are time-dependent, different values of $t$ shall help fix the incorrect matches in a given matching $\Pi_\text{in}$ to different extents. Therefore, if a heat kernel is used to fix these incorrect matches, $\langle \Pi, K_\mathcal{X}(t)\Pi_\text{in} K_\mathcal{Y}(t)\rangle$ is maximized, to obtain the optimal $\Pi$. This has relevance from a spectral perspective as well. The functional map equivalent to a point-to-point matching, on a reduced Laplace-Beltrami basis is given by $C_{\mathcal{X}\mathcal{Y}} = \phi_\mathcal{Y}^T\Pi\phi_\mathcal{X}$. Therefore, in the case of the heat kernels for the two shapes, $\langle \Pi, K_\mathcal{X}(t)\Pi_\text{in} K_\mathcal{Y}(t)\rangle = \langle C, e^{-\Lambda_\mathcal{Y}t}C_\text{in}e^{-\Lambda_\mathcal{X}t} \rangle$. Optimizing for the right matching in this case, is equivalent to optimizing for the correct functional map. 
+
+To obtain the ideal $t$ value for which this kernel aids the matching in the best possible, one could train this over multiple examples and learn which $t$ works the best. But, a more complex matching problem, with a heavily noisy input match, would need more complexity in the kernel. The work by Defferrard et al.\cite{defferrard2016convolutional} shows that this sort of kernel multiplication is effectively convolution on the spatial, in this particular case, manifold domain. The idea here would be the preserve the geometry information, by means of using the spectral information provided by the Laplace-Beltrami eigenfunctions, but to extend this using a more general kernel, as opposed to the heat kernel. Here, it can be seen that for any polynomial $f_\theta(x)$, one can show that $f_\theta(\nabla_\mathcal{X}) = \phi_\mathcal{X}f_\theta(\Lambda_\mathcal{X})\phi_\mathcal{X}^T$. If the kernel is defined by this more general polynomial, then the matching becomes equivalent to solving for $\langle C, f_\theta(\Lambda_\mathcal{Y})C_\text{in}f_\theta(\Lambda_\mathcal{X}) \rangle$. This is more general since for even other functions like the case of exponential function as in the case of the heat kernel, one could write it out as a Taylor expansion, thereby making the function distributive over the LB eigenfunctions. With this setup, one could, ideally, learn $\theta$ that can optimize for better matching, providing us with more variables to capture the variability in the matching. 
+
+\bibliographystyle{abbrv}
+\bibliography{main2}
+
+\end{document}
